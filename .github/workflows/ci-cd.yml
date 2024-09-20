@@ -1,5 +1,10 @@
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: zeb-sdl-eus1-dev-test
+  EKS_CLUSTER_NAME: ZEB-EUS1-SDL-EKS-1-DEV
+  KUBECTL_VERSION: v1
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -12,14 +17,30 @@ jobs:
       run: pip install -r requirements.txt
     - name: Run tests
       run: python -m unittest discover tests
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Deploy to production
-      run: echo 'Deploying to production...'
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-region: ${{ env.AWS_REGION }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - id: login-ecr
+      name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+    - env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      name: Build, tag, and push image to Amazon ECR
+      run: "\n                 "
+    - name: Install kubectl
+      run: "\n                 "
+    - name: Update kubeconfig
+      run: aws eks get-token --cluster-name ${{ env.EKS_CLUSTER_NAME }} | kubectl
+        apply -f -
+    - env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      name: Deploy to EKS
+      run: "\n                 "
 name: CI/CD Pipeline
 'on':
 - push
